@@ -12,8 +12,6 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.swing.*;
 
 /**
@@ -74,11 +72,16 @@ public class Client extends JFrame {
         contentPane.setBackground(Color.gray);
 
         if (clientID == 1) {
-            header.setText("You are client number 1. \n\nMost recent message: -->");
-            buttonEnabled = true;
+            header.setText("You are client number 1. Please wait for the rest of the clients to connect before starting\n\nMost recent message: -->");
+            //go ahead and wait for the server to send the startup signal
+            Thread t = new Thread(new Runnable() {
+                public void run() {
+                    startUpClient1();
+                }
+            });
+            t.start();
         } else {
             header.setText("You are client number 2. \n\nMost recent message: -->");
-            buttonEnabled = false;
             Thread t = new Thread(new Runnable() {
                 public void run() {
                     updateTurn();
@@ -87,6 +90,7 @@ public class Client extends JFrame {
             t.start();
         }
 
+        buttonEnabled = false;
         updateButtons();
         this.setVisible(true);
     }
@@ -105,7 +109,7 @@ public class Client extends JFrame {
                 updateButtons();
 
                 csc.sendNewString(messageToSend.getText());
-                
+
                 Thread t = new Thread(new Runnable() {
                     public void run() {
                         updateTurn();
@@ -121,21 +125,33 @@ public class Client extends JFrame {
     public void updateButtons() {
         sendBtn.setEnabled(buttonEnabled);
     }
+    
+    /**
+     * Enables the button for client 1 when the server sends the signal
+     */
+    public void startUpClient1() {
+        //place to store the boolean
+        //and assign it to the value the server sends
+        boolean recivedBoolean = csc.reciveBoolean();
+        
+        //set the button to the value
+        sendBtn.setEnabled(recivedBoolean);
+    }
 
     public void updateTurn() {
         //get the echo from the server with the message just sent
         String msg = csc.reciveNewString();
         messageRecived.setText(msg);
-        
+
         //if first recive is true then that was not accutaly the echo but that first message
         if (firstRecive && clientID == 2) {
             firstRecive = false;
         } else {
-        
-        //wait for newest message from other client
-        msg = csc.reciveNewString();
-        messageRecived.setText(msg);
-        
+
+            //wait for newest message from other client
+            msg = csc.reciveNewString();
+            messageRecived.setText(msg);
+
         }
 
         buttonEnabled = true;
@@ -158,7 +174,7 @@ public class Client extends JFrame {
                 clientID = dataIn.readInt();
                 chat = dataIn.readUTF();
                 System.out.println("Connected to a server as Client #" + clientID);
-                System.out.println("Start message is \"" + chat + "\"");
+                messageRecived.setText(chat);
             } catch (IOException e) {
                 System.out.println("IOException from CSC contructor ");
             }
@@ -183,6 +199,18 @@ public class Client extends JFrame {
             }
 
             return msg;
+        }
+        
+        public boolean reciveBoolean() {
+            boolean bool = false;
+            
+            try {
+                bool = dataIn.readBoolean();
+            } catch (IOException ex) {
+                System.out.println("IOException from CSC reciveBoolean()");
+            }
+            
+            return bool;
         }
     }
 
