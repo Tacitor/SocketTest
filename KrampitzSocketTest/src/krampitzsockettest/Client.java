@@ -29,19 +29,21 @@ public class Client extends JFrame {
     private JButton sendBtn;
 
     private int clientID;
-    private int otherClient;
+    private int totalClientNum; //the number of total clients that will be connected to the server
+    private int messagesRecivedThisCyle;
 
     private String chat;
     private boolean buttonEnabled;
-    private boolean firstRecive = true; //if this client waiting for the first transmision from the server
+    private boolean justPressedSend = false; //if this client waiting for the first transmision from the server
+    private boolean firstRecive = true;
 
     private ClientSideConnection csc; //the socket type var to hold the connection for this Client
 
     /**
      * Constructor
-     * 
+     *
      * @param width
-     * @param height 
+     * @param height
      */
     public Client(int width, int height) {
         this.width = width;
@@ -51,6 +53,9 @@ public class Client extends JFrame {
         messageRecived = new JTextArea();
         messageToSend = new JTextArea();
         sendBtn = new JButton();
+
+        //no messages have been recived yet
+        messagesRecivedThisCyle = 0;
     }
 
     public void setUpGUI() {
@@ -89,7 +94,7 @@ public class Client extends JFrame {
             });
             t.start();
         } else {
-            header.setText("You are client number 2. \n\nMost recent message: -->");
+            header.setText("You are client number " + clientID + ". \n\nMost recent message: -->");
             //wait for a message to come through
             Thread t = new Thread(new Runnable() {
                 public void run() {
@@ -114,6 +119,10 @@ public class Client extends JFrame {
         ActionListener al = new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                justPressedSend = true;
+                //new cycle for this client, so set it to 0
+                messagesRecivedThisCyle = 0;
+
                 System.out.println("Sending the message: " + messageToSend.getText());
 
                 buttonEnabled = false;
@@ -143,6 +152,9 @@ public class Client extends JFrame {
      * Enables the button for client 1 when the server sends the signal
      */
     public void startUpClient1() {
+        //doesn't need a first recive
+        firstRecive = false;
+        
         //place to store the boolean
         //and assign it to the value the server sends
         boolean recivedBoolean = csc.reciveBoolean();
@@ -152,32 +164,80 @@ public class Client extends JFrame {
     }
 
     public void updateTurn() {
-        //get the type of message the server is sending
-        int type = csc.reciveType();
+        int messagesNeededThisCycle;
 
-        //get the echo from the server with the message just sent
-        if (type == 1) {
-            String msg = csc.reciveNewString();
-            messageRecived.setText(msg);
-        }
-
-        //if first recive is true then that was not accutaly the echo but that first message
-        if (firstRecive && clientID == 2) {
+        if (firstRecive) {
+            messagesNeededThisCycle = (clientID - 1);
             firstRecive = false;
         } else {
-            
-            type = csc.reciveType();
+            messagesNeededThisCycle = (totalClientNum - 1);
+        }
 
-            if (type == 1) {
-                //wait for newest message from other client
-                String msg = csc.reciveNewString();
-                messageRecived.setText(msg);
+        //only update the clients turn if all other clients have had a go
+        while (messagesRecivedThisCyle < messagesNeededThisCycle) {
+
+            //if the client is just listening for 1 response
+            if (!justPressedSend) {
+
+                regularRecive();
+
+            } else { //or if the client just sent a message and expects and echo and then a response
+
+                //get the type of message the server is sending
+                int type = csc.reciveType();
+
+                //get the echo from the server with the message just sent
+                if (type == 1) {
+                    String msg = csc.reciveNewString();
+                    messageRecived.setText(msg);
+                }
+
+                //then to a regular recive
+                regularRecive();
+
+                //the special case for clients that just sent a message has run. Now it needs to listen
+                justPressedSend = false;
+
             }
+
+            messagesRecivedThisCyle++;
 
         }
 
-        buttonEnabled = true;
         updateButtons();
+
+    }
+
+    private void regularRecive() {
+        int type = csc.reciveType();
+
+        if (type == 1) {
+            //wait for newest message from other client
+            String msg = csc.reciveNewString();
+            messageRecived.setText(msg);
+
+            //check if that transmision was the person right before me
+            //System.out.println(msg.lastIndexOf("#"));
+            //System.out.println(msg.charAt(msg.lastIndexOf("#") + 1));
+            //check if that message just came from the client infront of this one
+            if (Integer.parseInt(Character.toString(msg.charAt(msg.lastIndexOf("#") + 1))) == (clientID - 1)) {
+                //System.out.println("True " + clientID);
+                buttonEnabled = true;
+            } else {
+                //if it wasn't from the one infront check if it came from the last one only if this is the first one
+                if (clientID == 1 && Integer.parseInt(Character.toString(msg.charAt(msg.lastIndexOf("#") + 1))) == totalClientNum) {
+                    //System.out.println("True " + clientID);
+                    buttonEnabled = true;
+                } else {
+
+                    //System.out.println("False " + clientID);
+                    buttonEnabled = false;
+                }
+            }
+
+        } else {
+            buttonEnabled = false;
+        }
     }
 
     //client connection inner class
@@ -196,6 +256,8 @@ public class Client extends JFrame {
                 dataOut = new DataOutputStream(socket.getOutputStream());
                 //now that a connection has been establichsed get the number for this client
                 clientID = dataIn.readInt();
+                //the the totalClientNum
+                totalClientNum = dataIn.readInt();
                 //get the starting chat
                 chat = dataIn.readUTF();
                 System.out.println("Connected to a server as Client #" + clientID);

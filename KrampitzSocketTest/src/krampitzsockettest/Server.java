@@ -10,6 +10,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import javax.swing.JOptionPane;
 
 /**
  *
@@ -21,17 +22,28 @@ public class Server {
     private ServerSocket serverSocket;
     //the number of clients what have connected
     private int numClients;
+    private int maxClients; //the number of clients that will connect
 
     //The array of clients
-    private ServerSideConnection client1;
-    private ServerSideConnection client2;
+    private ServerSideConnection[] clients;
 
     //A starting String
     private String chat = "Hello from server\n";
 
-    public Server() {
+    /**
+     * The constructor
+     *
+     * @param maxClients
+     */
+    public Server(int maxClients) {
         //no clients have connected yet
         numClients = 0;
+        //save the number of clients that will connect
+        this.maxClients = maxClients;
+
+        //initialize the array
+        clients = new ServerSideConnection[maxClients];
+
         //create the socket to listen 
         try {
             serverSocket = new ServerSocket(25569);
@@ -44,7 +56,7 @@ public class Server {
         try {
             System.out.println("Waiting for connections...");
             //wait until all the clients have connected
-            while (numClients < 2) {
+            while (numClients < maxClients) {
                 //create a reciving socket on the server side
                 Socket s = serverSocket.accept();
                 //count it as a client
@@ -52,17 +64,15 @@ public class Server {
                 System.out.println("Client #" + numClients + " has connected");
                 //create a new SSC for to keep track of that incoming socket
                 ServerSideConnection ssc = new ServerSideConnection(s, numClients);
+
                 //save that new ssc to the list of clients
-                if (numClients == 1) {
-                    client1 = ssc;
-                } else {
-                    client2 = ssc;
-                }
+                clients[numClients - 1] = ssc;
+
                 //start a new thread just for that one client
                 Thread t = new Thread(ssc);
                 t.start();
             }
-            System.out.println("We now have two players. No more connections will be accepted.");
+            System.out.println("We now have " + maxClients + " players. No more connections will be accepted.");
         } catch (IOException e) {
             System.out.println("IOException from acceptConnections");
         }
@@ -97,7 +107,7 @@ public class Server {
                 dataIn = new DataInputStream(socket.getInputStream());
                 dataOut = new DataOutputStream(socket.getOutputStream());
             } catch (IOException e) {
-                System.out.println("IOException from SSC constuctor");
+                System.out.println("IOException from SSC constuctor for client#" + id);
             }
         }
 
@@ -106,13 +116,14 @@ public class Server {
             try {
                 //when a client first connects send it's ID and the chat in it's current state
                 dataOut.writeInt(clientID);
+                dataOut.writeInt(maxClients); //the the client how many clients there will be
                 dataOut.writeUTF(chat);
                 dataOut.flush(); //send it
 
                 //check if this is the last client to connect
-                if (clientID == 2) {
+                if (clientID == maxClients) {
                     //then tell the first client to begin
-                    client1.sendBoolean(true);
+                    clients[0].sendBoolean(true);
 
                     System.out.println("Send begin command to Client 1");
                 }
@@ -131,19 +142,18 @@ public class Server {
                         //check if a user wants to clear the chat
                         if (newMsg.equals("/clear")) {
                             clearChat();
+                            updateChat("[Server] Client #" + clientID + " cleared chat\n");
 
                         } else { //else add the new string
 
                             //if a message come from client 1
-                            if (clientID == 1) {
-                                updateChat("Client #1: " + newMsg + "\n");
-                            } else { //if it instead comes from client 2
-                                updateChat("Client #2: " + newMsg + "\n");
-                            }
+                            updateChat("Client #" + clientID + ": " + newMsg + "\n");
                         }
                         //send the new chat out to all the clients
-                        client1.sendNewString(chat);
-                        client2.sendNewString(chat);
+                        for (ServerSideConnection client : clients) {
+                            client.sendNewString(chat);
+                        }
+                        
                         //debug the chat
                         //System.out.println("Chat is now: \"\n" + chat + "\" chat end.");
                     }
@@ -190,8 +200,11 @@ public class Server {
     public static void main(String[] args) {
         // TODO code application logic here
         System.out.println("Hello World: Server");
+        //get the number of clients the server admin wants
+        int numClientsToHave = Integer.parseInt(JOptionPane.showInputDialog("Enter the integer number of clients that will connect:"));
+
         //create the server socket
-        Server server = new Server();
+        Server server = new Server(numClientsToHave);
         //begin listening
         server.acceptConnections();
     }
