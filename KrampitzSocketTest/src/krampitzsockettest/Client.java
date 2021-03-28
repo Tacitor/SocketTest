@@ -119,7 +119,6 @@ public class Client extends JFrame {
     }
 
     public void updateButtons() {
-        System.out.println("Setting to:" + buttonEnabled);
         sendBtn.setEnabled(buttonEnabled);
     }
 
