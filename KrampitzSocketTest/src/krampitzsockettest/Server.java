@@ -113,33 +113,40 @@ public class Server {
                 if (clientID == 2) {
                     //then tell the first client to begin
                     client1.sendBoolean(true);
-                    
+
                     System.out.println("Send begin command to Client 1");
                 }
 
                 //loop state after all startup business is complete
                 while (true) {
                     //accept a message
-                    String newMsg = dataIn.readUTF();
+                    int type = dataIn.readInt(); //get the type of transmision
 
-                    //check if a user wants to clear the chat
-                    if (newMsg.equals("/clear")) {
-                        clearChat();
+                    //if the client sent a chat message
+                    if (type == 1) {
 
-                    } else { //else add the new string
+                        //read the chat message
+                        String newMsg = dataIn.readUTF();
 
-                        //if a message come from client 1
-                        if (clientID == 1) {
-                            updateChat("Client #1: " + newMsg + "\n");
-                        } else { //if it instead comes from client 2
-                            updateChat("Client #2: " + newMsg + "\n");
+                        //check if a user wants to clear the chat
+                        if (newMsg.equals("/clear")) {
+                            clearChat();
+
+                        } else { //else add the new string
+
+                            //if a message come from client 1
+                            if (clientID == 1) {
+                                updateChat("Client #1: " + newMsg + "\n");
+                            } else { //if it instead comes from client 2
+                                updateChat("Client #2: " + newMsg + "\n");
+                            }
                         }
+                        //send the new chat out to all the clients
+                        client1.sendNewString(chat);
+                        client2.sendNewString(chat);
+                        //debug the chat
+                        //System.out.println("Chat is now: \"\n" + chat + "\" chat end.");
                     }
-                    //send the new chat out to all the clients
-                    client1.sendNewString(chat);
-                    client2.sendNewString(chat);
-                    //debug the chat
-                    //System.out.println("Chat is now: \"\n" + chat + "\" chat end.");
                 }
             } catch (IOException e) {
                 System.out.println("IOException from SSC run() for ID#" + clientID);
@@ -148,11 +155,12 @@ public class Server {
 
         /**
          * Send a string to the client
-         * 
-         * @param msg 
+         *
+         * @param msg
          */
         public void sendNewString(String msg) {
             try {
+                dataOut.writeInt(1); //tell the client they are reciving a chat message
                 dataOut.writeUTF(msg);
                 dataOut.flush();
             } catch (IOException e) {
@@ -162,8 +170,8 @@ public class Server {
 
         /**
          * Send a boolean to the client
-         * 
-         * @param msg 
+         *
+         * @param msg
          */
         public void sendBoolean(boolean msg) {
             try {
