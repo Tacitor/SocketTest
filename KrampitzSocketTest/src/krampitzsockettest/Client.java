@@ -353,6 +353,9 @@ public class Client extends JFrame {
 
                 //write the file
                 fos.write(fileTypeRecieve.getFile(), 0, fileTypeRecieve.getFile().length);
+                
+                //close it
+                fos.close();
             } catch (FileNotFoundException exception) {
                 JOptionPane.showMessageDialog(null, "There was an error loading the save file:\n" + exception, "Loading Error", JOptionPane.ERROR_MESSAGE);
             } catch (IOException exception) {
@@ -411,7 +414,7 @@ public class Client extends JFrame {
         public byte[] getFile() {
             return file;
         }
-        
+
         public String getFileName() {
             return fileName;
         }
@@ -478,8 +481,17 @@ public class Client extends JFrame {
                 file = new byte[dataIn.readInt()];
                 //get the fileName
                 fileName = dataIn.readUTF();
-                //get the file
-                dataIn.read(file, 0, file.length);
+
+                int count = 0;
+                while (count < file.length) {
+                    int bytesRead = dataIn.read(file, count, file.length - count);
+                    System.out.println("bytesRead: " + bytesRead);
+                    if (bytesRead == -1) {
+                        System.out.println("didn't get a complete file");
+                    }
+                    count += bytesRead;
+                }
+                
             } catch (IOException ex) {
                 System.out.println("IOException from CSC reciveNewString()");
             }

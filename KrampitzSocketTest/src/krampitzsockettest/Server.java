@@ -7,9 +7,13 @@ package krampitzsockettest;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import javax.swing.JOptionPane;
 
@@ -168,18 +172,26 @@ public class Server {
 
                         //and read in the length from the socket
                         int fileLength = dataIn.readInt();
-                        
+
                         //read in the file name and extension
                         String fileName = dataIn.readUTF();
 
                         //create byte array to store the file
                         byte[] fileAsStream = new byte[fileLength];
 
-                        //read in the file
-                        dataIn.read(fileAsStream, 0, fileAsStream.length);
+                        int count = 0;
+                        while (count < fileLength) {
+                            int bytesRead = dataIn.read(fileAsStream, count, fileAsStream.length - count);
+                            System.out.println("bytesRead: " + bytesRead);
+                            if (bytesRead == -1) {
+                                System.out.println("didn't get a complete file");
+                            }
+                            count += bytesRead;
+                        }
 
                         //debug the file that was sent
-                        //System.out.println(Arrays.toString(fileAsStream));
+                        System.out.println(Arrays.toString(fileAsStream));
+
                         //send the new chat out to all the clients
                         for (ServerSideConnection client : clients) {
                             //debug how many times it was sent
