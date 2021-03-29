@@ -10,8 +10,13 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.Arrays;
+import java.util.Scanner;
 import javax.swing.*;
 
 /**
@@ -27,6 +32,7 @@ public class Client extends JFrame {
     private JTextArea messageRecived;
     private JTextArea messageToSend;
     private JButton sendBtn;
+    private JButton fileBtn;
 
     private int clientID;
     private int totalClientNum; //the number of total clients that will be connected to the server
@@ -53,6 +59,7 @@ public class Client extends JFrame {
         messageRecived = new JTextArea();
         messageToSend = new JTextArea();
         sendBtn = new JButton();
+        fileBtn = new JButton();
 
         //no messages have been recived yet
         messagesRecivedThisCyle = 0;
@@ -68,6 +75,7 @@ public class Client extends JFrame {
         contentPane.add(messageRecived);
         contentPane.add(messageToSend);
         contentPane.add(sendBtn);
+        contentPane.add(fileBtn);
         header.setText("Most recent message: ");
         header.setWrapStyleWord(true);
         header.setLineWrap(true);
@@ -79,7 +87,8 @@ public class Client extends JFrame {
         messageToSend.setWrapStyleWord(true);
         messageToSend.setLineWrap(true);
         messageToSend.setEditable(true);
-        sendBtn.setText("Send");
+        sendBtn.setText("Send Chat");
+        fileBtn.setText("Send File");
         contentPane.setForeground(Color.green);
         contentPane.setBackground(Color.gray);
 
@@ -119,33 +128,101 @@ public class Client extends JFrame {
         ActionListener al = new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                justPressedSend = true;
-                //new cycle for this client, so set it to 0
-                messagesRecivedThisCyle = 0;
+                JButton button = (JButton) e.getSource();
+                String buttonString = button.getText();
 
-                System.out.println("Sending the message: " + messageToSend.getText());
+                //if the player sends a chat
+                if (buttonString.equals("Send Chat")) {
 
-                buttonEnabled = false;
-                updateButtons();
+                    justPressedSend = true;
+                    //new cycle for this client, so set it to 0
+                    messagesRecivedThisCyle = 0;
 
-                //send the message
-                csc.sendNewString(messageToSend.getText());
+                    System.out.println("Sending the message: " + messageToSend.getText());
 
-                //now wait fot a response
-                Thread t = new Thread(new Runnable() {
-                    public void run() {
-                        updateTurn();
+                    buttonEnabled = false;
+                    updateButtons();
+
+                    //send the message
+                    csc.sendNewString(messageToSend.getText());
+
+                    //clear the chat field
+                    messageToSend.setText("");
+
+                    //now wait fot a response
+                    Thread t = new Thread(new Runnable() {
+                        public void run() {
+                            updateTurn();
+                        }
+                    });
+                    t.start();
+                } else if (buttonString.equals("Send File")) {
+
+                    JFileChooser saveFileLoader = new JFileChooser();
+                    //set up the file choose and call it
+                    saveFileLoader.setDialogTitle("Select a Save File to Open:");
+                    int userLoadSelection = saveFileLoader.showOpenDialog(null);
+
+                    if (userLoadSelection == JFileChooser.APPROVE_OPTION) {
+
+                        buttonEnabled = false;
+                        updateButtons();
+
+                        //new cycle for this client, so set it to 0
+                        messagesRecivedThisCyle = 0;
+
+                        //test if it is a vailid save file
+                        try {
+                            String filePath = saveFileLoader.getSelectedFile().getPath();
+                            File file = new File(filePath);
+                            Scanner scanner = new Scanner(file);
+                            FileInputStream fileStream = new FileInputStream(file);
+
+                            int fileLength = (int) file.length();
+
+                            String fileName = filePath.substring(filePath.lastIndexOf(File.separator) + 1);
+
+                            //debug file name and length
+                            //System.out.println(fileName);
+                            //System.out.println(fileLength);
+                            byte fileBytes[] = new byte[fileLength];
+                            fileStream.read(fileBytes, 0, fileLength);
+
+                            //debug the stream
+                            //System.out.println(Arrays.toString(fileBytes));
+                            csc.sendFileStream(fileBytes); //send the file
+
+                            //clear the chat field
+                            messageToSend.setText("");
+
+                            justPressedSend = true;
+
+                            //now wait fot a response
+                            Thread t = new Thread(new Runnable() {
+                                public void run() {
+                                    updateTurn();
+                                }
+                            });
+                            t.start();
+
+                        } catch (FileNotFoundException exception) {
+                            JOptionPane.showMessageDialog(null, "There was an error loading the save file:\n" + exception, "Loading Error", JOptionPane.ERROR_MESSAGE);
+                        } catch (IOException exception) {
+                            JOptionPane.showMessageDialog(null, "There was an IOException loading the save file:\n" + exception, "Loading Error", JOptionPane.ERROR_MESSAGE);
+                        }
+
                     }
-                });
-                t.start();
+                }
             }
         };
 
         sendBtn.addActionListener(al);
+        fileBtn.addActionListener(al);
     }
 
     public void updateButtons() {
         sendBtn.setEnabled(buttonEnabled);
+        fileBtn.setEnabled(buttonEnabled);
     }
 
     /**
@@ -154,13 +231,14 @@ public class Client extends JFrame {
     public void startUpClient1() {
         //doesn't need a first recive
         firstRecive = false;
-        
+
         //place to store the boolean
         //and assign it to the value the server sends
         boolean recivedBoolean = csc.reciveBoolean();
 
         //set the button to the value
-        sendBtn.setEnabled(recivedBoolean);
+        buttonEnabled = recivedBoolean;
+        updateButtons();
     }
 
     public void updateTurn() {
@@ -190,10 +268,18 @@ public class Client extends JFrame {
                 if (type == 1) {
                     String msg = csc.reciveNewString();
                     messageRecived.setText(msg);
-                }
 
-                //then to a regular recive
-                regularRecive();
+                    //then to a regular recive
+                    regularRecive();
+                } else if (type == 2) { //if file is being sent
+                    FileTypeRecieve fileTypeRecieve = csc.recieveFile();
+                    messageRecived.setText(fileTypeRecieve.getChat());
+
+                    System.out.println("Special Got file:\n" + Arrays.toString(fileTypeRecieve.getFile()));
+
+                    //then to a regular recive
+                    regularRecive();
+                }
 
                 //the special case for clients that just sent a message has run. Now it needs to listen
                 justPressedSend = false;
@@ -216,28 +302,68 @@ public class Client extends JFrame {
             String msg = csc.reciveNewString();
             messageRecived.setText(msg);
 
-            //check if that transmision was the person right before me
-            //System.out.println(msg.lastIndexOf("#"));
-            //System.out.println(msg.charAt(msg.lastIndexOf("#") + 1));
-            //check if that message just came from the client infront of this one
-            if (Integer.parseInt(Character.toString(msg.charAt(msg.lastIndexOf("#") + 1))) == (clientID - 1)) {
-                //System.out.println("True " + clientID);
-                buttonEnabled = true;
-            } else {
-                //if it wasn't from the one infront check if it came from the last one only if this is the first one
-                if (clientID == 1 && Integer.parseInt(Character.toString(msg.charAt(msg.lastIndexOf("#") + 1))) == totalClientNum) {
-                    //System.out.println("True " + clientID);
-                    buttonEnabled = true;
-                } else {
+            checkForTurn(msg);
 
-                    //System.out.println("False " + clientID);
-                    buttonEnabled = false;
-                }
-            }
+        } else if (type == 2) { //else if type is 2
+
+            FileTypeRecieve fileTypeRecieve = csc.recieveFile();
+            messageRecived.setText(fileTypeRecieve.getChat());
+
+            System.out.println("Regular Got file:\n" + Arrays.toString(fileTypeRecieve.getFile()));
+            
+            //System.out.println("Chat is : \n" + fileTypeRecieve.getChat());
+
+            checkForTurn(fileTypeRecieve.getChat());
 
         } else {
             buttonEnabled = false;
         }
+    }
+
+    public void checkForTurn(String msg) {
+        //check if that transmision was the person right before me
+        //System.out.println(msg.lastIndexOf("#"));
+        //System.out.println(msg.charAt(msg.lastIndexOf("#") + 1));
+        //check if that message just came from the client infront of this one
+        if (Integer.parseInt(Character.toString(msg.charAt(msg.lastIndexOf("#") + 1))) == (clientID - 1)) {
+            //System.out.println("True " + clientID);
+            buttonEnabled = true;
+        } else {
+            //if it wasn't from the one infront check if it came from the last one only if this is the first one
+            if (clientID == 1 && Integer.parseInt(Character.toString(msg.charAt(msg.lastIndexOf("#") + 1))) == totalClientNum) {
+                //System.out.println("True " + clientID);
+                buttonEnabled = true;
+            } else {
+
+                //System.out.println("False " + clientID);
+                buttonEnabled = false;
+            }
+        }
+    }
+
+    private class FileTypeRecieve {
+
+        private byte[] file;
+        private String chat;
+
+        public FileTypeRecieve() {
+            this.file = new byte[1];
+            this.chat = "";
+        }
+
+        public FileTypeRecieve(byte[] file, String chat) {
+            this.file = file;
+            this.chat = chat;
+        }
+
+        public String getChat() {
+            return chat;
+        }
+
+        public byte[] getFile() {
+            return file;
+        }
+
     }
 
     //client connection inner class
@@ -275,6 +401,34 @@ public class Client extends JFrame {
             } catch (IOException e) {
                 System.out.println("IOException from CSC sendNewString()");
             }
+        }
+
+        public void sendFileStream(byte[] fileStream) {
+            try {
+                dataOut.writeInt(2); //tell the server that is it recieving a file
+                dataOut.writeInt(fileStream.length); //send the length of the file
+                dataOut.write(fileStream, 0, fileStream.length);
+                dataOut.flush();
+            } catch (IOException e) {
+                System.out.println("IOException from CSC sendFileStream()");
+            }
+        }
+
+        public FileTypeRecieve recieveFile() {
+            String msg = "";
+            byte[] file = new byte[1];
+
+            try {
+                msg = dataIn.readUTF();
+                //get the file length
+                file = new byte[dataIn.readInt()];
+                //get the file
+                dataIn.read(file, 0, file.length);
+            } catch (IOException ex) {
+                System.out.println("IOException from CSC reciveNewString()");
+            }
+
+            return new FileTypeRecieve(file, msg);
         }
 
         public String reciveNewString() {

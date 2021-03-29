@@ -10,6 +10,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Arrays;
 import javax.swing.JOptionPane;
 
 /**
@@ -111,6 +112,10 @@ public class Server {
             }
         }
 
+        public int getID() {
+            return clientID;
+        }
+
         @Override
         public void run() {
             try {
@@ -153,9 +158,34 @@ public class Server {
                         for (ServerSideConnection client : clients) {
                             client.sendNewString(chat);
                         }
-                        
+
                         //debug the chat
                         //System.out.println("Chat is now: \"\n" + chat + "\" chat end.");
+                    } else if (type == 2) { //if the client sent a file
+
+                        //tell all the clients about the file
+                        updateChat("[Server] Client #" + clientID + " has sent a file to everyone's desktop\n");
+
+                        //and read in the length from the socket
+                        int fileLength = dataIn.readInt();
+
+                        //create byte array to store the file
+                        byte[] fileAsStream = new byte[fileLength];
+
+                        //read in the file
+                        dataIn.read(fileAsStream, 0, fileAsStream.length);
+
+                        //debug the file that was sent
+                        //System.out.println(Arrays.toString(fileAsStream));
+                        //send the new chat out to all the clients
+                        for (ServerSideConnection client : clients) {
+                            //debug how many times it was sent
+                            //System.out.println("Sent it");
+                            //System.out.println("\nCurrent chat is :\n" + chat);
+                            client.sendFile(chat, fileAsStream);
+
+                        }
+
                     }
                 }
             } catch (IOException e) {
@@ -172,6 +202,25 @@ public class Server {
             try {
                 dataOut.writeInt(1); //tell the client they are reciving a chat message
                 dataOut.writeUTF(msg);
+                dataOut.flush();
+            } catch (IOException e) {
+                System.out.println("IOException from SSC sendNewString()");
+            }
+        }
+
+        /**
+         * Send a file to the client. Also update their chat so they know to
+         * check for a new file
+         *
+         * @param msg
+         * @param fileData
+         */
+        public void sendFile(String msg, byte[] fileData) {
+            try {
+                dataOut.writeInt(2); //tell the client they are reciving a file and chat message
+                dataOut.writeUTF(msg);
+                dataOut.writeInt(fileData.length); //send the length of the file
+                dataOut.write(fileData, 0, fileData.length); //send the file
                 dataOut.flush();
             } catch (IOException e) {
                 System.out.println("IOException from SSC sendNewString()");
