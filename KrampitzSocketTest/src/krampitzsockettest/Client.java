@@ -55,6 +55,23 @@ public class Client extends JFrame {
      * @param height
      */
     public Client(int width, int height) {
+        /* Set the Windows 10 look and feel */
+        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
+        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
+         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
+         */
+        try {
+            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+                if ("Windows".equals(info.getName())) {
+                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                    break;
+                }
+            }
+        } catch (Exception ex) {
+            System.out.println("Error loading Windows Look and feel");
+        }
+        
+        
         this.width = width;
         this.height = height;
         contentPane = this.getContentPane();
@@ -83,13 +100,16 @@ public class Client extends JFrame {
         header.setWrapStyleWord(true);
         header.setLineWrap(true);
         header.setEditable(false);
+        header.setFont(new Font("Arial", Font.PLAIN, 12));
         messageRecived.setWrapStyleWord(true);
         messageRecived.setLineWrap(true);
         messageRecived.setEditable(false);
+        messageRecived.setFont(new Font("Arial", Font.PLAIN, 12));
         messageToSend.setText("Type here...");
         messageToSend.setWrapStyleWord(true);
         messageToSend.setLineWrap(true);
         messageToSend.setEditable(true);
+        messageToSend.setFont(new Font("Arial", Font.PLAIN, 12));
         sendBtn.setText("Send Chat");
         fileBtn.setText("Send File");
         contentPane.setForeground(Color.green);
@@ -326,10 +346,10 @@ public class Client extends JFrame {
 
                 //ensure the directory is there
                 Files.createDirectories(Paths.get(saveToPath));
-                
+
                 //Create and output stream at the directory
                 FileOutputStream fos = new FileOutputStream(saveToPath + File.separator + "file.txt");
-                
+
                 //write the file
                 fos.write(fileTypeRecieve.getFile(), 0, fileTypeRecieve.getFile().length);
             } catch (FileNotFoundException exception) {
