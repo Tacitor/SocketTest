@@ -70,8 +70,7 @@ public class Client extends JFrame {
         } catch (Exception ex) {
             System.out.println("Error loading Windows Look and feel");
         }
-        
-        
+
         this.width = width;
         this.height = height;
         contentPane = this.getContentPane();
@@ -213,7 +212,7 @@ public class Client extends JFrame {
 
                             //debug the stream
                             //System.out.println(Arrays.toString(fileBytes));
-                            csc.sendFileStream(fileBytes); //send the file
+                            csc.sendFileStream(fileBytes, fileName); //send the file
 
                             //clear the chat field
                             messageToSend.setText("");
@@ -332,9 +331,11 @@ public class Client extends JFrame {
             checkForTurn(msg);
 
         } else if (type == 2) { //else if type is 2
-
+            //recive the file
             FileTypeRecieve fileTypeRecieve = csc.recieveFile();
             messageRecived.setText(fileTypeRecieve.getChat());
+            //get just the name of the file
+            String fileName = fileTypeRecieve.getFileName();
             //debug the file and how it was recived
             //System.out.println("Regular Got file:\n" + Arrays.toString(fileTypeRecieve.getFile()));
 
@@ -348,7 +349,7 @@ public class Client extends JFrame {
                 Files.createDirectories(Paths.get(saveToPath));
 
                 //Create and output stream at the directory
-                FileOutputStream fos = new FileOutputStream(saveToPath + File.separator + "file.txt");
+                FileOutputStream fos = new FileOutputStream(saveToPath + File.separator + fileName);
 
                 //write the file
                 fos.write(fileTypeRecieve.getFile(), 0, fileTypeRecieve.getFile().length);
@@ -390,15 +391,17 @@ public class Client extends JFrame {
 
         private byte[] file;
         private String chat;
+        private String fileName;
 
         public FileTypeRecieve() {
             this.file = new byte[1];
             this.chat = "";
         }
 
-        public FileTypeRecieve(byte[] file, String chat) {
+        public FileTypeRecieve(byte[] file, String chat, String fileName) {
             this.file = file;
             this.chat = chat;
+            this.fileName = fileName;
         }
 
         public String getChat() {
@@ -407,6 +410,10 @@ public class Client extends JFrame {
 
         public byte[] getFile() {
             return file;
+        }
+        
+        public String getFileName() {
+            return fileName;
         }
 
     }
@@ -448,10 +455,11 @@ public class Client extends JFrame {
             }
         }
 
-        public void sendFileStream(byte[] fileStream) {
+        public void sendFileStream(byte[] fileStream, String fileName) {
             try {
                 dataOut.writeInt(2); //tell the server that is it recieving a file
                 dataOut.writeInt(fileStream.length); //send the length of the file
+                dataOut.writeUTF(fileName); //send the name of the file including the extension
                 dataOut.write(fileStream, 0, fileStream.length);
                 dataOut.flush();
             } catch (IOException e) {
@@ -462,18 +470,21 @@ public class Client extends JFrame {
         public FileTypeRecieve recieveFile() {
             String msg = "";
             byte[] file = new byte[1];
+            String fileName = "";
 
             try {
                 msg = dataIn.readUTF();
                 //get the file length
                 file = new byte[dataIn.readInt()];
+                //get the fileName
+                fileName = dataIn.readUTF();
                 //get the file
                 dataIn.read(file, 0, file.length);
             } catch (IOException ex) {
                 System.out.println("IOException from CSC reciveNewString()");
             }
 
-            return new FileTypeRecieve(file, msg);
+            return new FileTypeRecieve(file, msg, fileName);
         }
 
         public String reciveNewString() {

@@ -168,6 +168,9 @@ public class Server {
 
                         //and read in the length from the socket
                         int fileLength = dataIn.readInt();
+                        
+                        //read in the file name and extension
+                        String fileName = dataIn.readUTF();
 
                         //create byte array to store the file
                         byte[] fileAsStream = new byte[fileLength];
@@ -182,7 +185,7 @@ public class Server {
                             //debug how many times it was sent
                             //System.out.println("Sent it");
                             //System.out.println("\nCurrent chat is :\n" + chat);
-                            client.sendFile(chat, fileAsStream);
+                            client.sendFile(chat, fileAsStream, fileName);
 
                         }
 
@@ -215,11 +218,12 @@ public class Server {
          * @param msg
          * @param fileData
          */
-        public void sendFile(String msg, byte[] fileData) {
+        public void sendFile(String msg, byte[] fileData, String fileName) {
             try {
                 dataOut.writeInt(2); //tell the client they are reciving a file and chat message
                 dataOut.writeUTF(msg);
                 dataOut.writeInt(fileData.length); //send the length of the file
+                dataOut.writeUTF(fileName); //send the file name
                 dataOut.write(fileData, 0, fileData.length); //send the file
                 dataOut.flush();
             } catch (IOException e) {
