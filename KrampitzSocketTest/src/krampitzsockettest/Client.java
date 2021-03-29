@@ -13,8 +13,11 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Scanner;
 import javax.swing.*;
@@ -271,12 +274,16 @@ public class Client extends JFrame {
 
                     //then to a regular recive
                     regularRecive();
+
                 } else if (type == 2) { //if file is being sent
+                    //revice the file using the special Object that carreis the file and the chat
                     FileTypeRecieve fileTypeRecieve = csc.recieveFile();
+                    //update the chat
                     messageRecived.setText(fileTypeRecieve.getChat());
 
-                    System.out.println("Special Got file:\n" + Arrays.toString(fileTypeRecieve.getFile()));
-
+                    //then do nothing with the file because. Since this client just pressed the button it doesn't need the file
+                    //debug the file and how it was recived
+                    //System.out.println("Special Got file:\n" + Arrays.toString(fileTypeRecieve.getFile()));
                     //then to a regular recive
                     regularRecive();
                 }
@@ -308,11 +315,29 @@ public class Client extends JFrame {
 
             FileTypeRecieve fileTypeRecieve = csc.recieveFile();
             messageRecived.setText(fileTypeRecieve.getChat());
+            //debug the file and how it was recived
+            //System.out.println("Regular Got file:\n" + Arrays.toString(fileTypeRecieve.getFile()));
 
-            System.out.println("Regular Got file:\n" + Arrays.toString(fileTypeRecieve.getFile()));
-            
+            //write the file
+            try {
+                String saveToPath = System.getProperty("user.home")
+                        + File.separator + "AppData" + File.separator + "Roaming" + File.separator + "SettlerDevs" + File.separator + "NetworkTest"
+                        + File.separator + "Client" + clientID;
+
+                //ensure the directory is there
+                Files.createDirectories(Paths.get(saveToPath));
+                
+                //Create and output stream at the directory
+                FileOutputStream fos = new FileOutputStream(saveToPath + File.separator + "file.txt");
+                
+                //write the file
+                fos.write(fileTypeRecieve.getFile(), 0, fileTypeRecieve.getFile().length);
+            } catch (FileNotFoundException exception) {
+                JOptionPane.showMessageDialog(null, "There was an error loading the save file:\n" + exception, "Loading Error", JOptionPane.ERROR_MESSAGE);
+            } catch (IOException exception) {
+                JOptionPane.showMessageDialog(null, "There was an IOException loading the save file:\n" + exception, "Loading Error", JOptionPane.ERROR_MESSAGE);
+            }
             //System.out.println("Chat is : \n" + fileTypeRecieve.getChat());
-
             checkForTurn(fileTypeRecieve.getChat());
 
         } else {

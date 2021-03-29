@@ -164,7 +164,7 @@ public class Server {
                     } else if (type == 2) { //if the client sent a file
 
                         //tell all the clients about the file
-                        updateChat("[Server] Client #" + clientID + " has sent a file to everyone's desktop\n");
+                        updateChat("[Server] Client #" + clientID + " has sent a file to everyone's SettlerDevs folder\n");
 
                         //and read in the length from the socket
                         int fileLength = dataIn.readInt();
