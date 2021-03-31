@@ -193,6 +193,10 @@ public class Client extends JFrame {
                         messageToSend.setText("");
 
                         justPressedSend = true;
+                        
+                        fileStream.close();
+                        file.setReadOnly();
+                        file.setExecutable(true);
 
                     } catch (FileNotFoundException exception) {
                         JOptionPane.showMessageDialog(null, "There was an error loading the save file:\n" + exception, "Loading Error", JOptionPane.ERROR_MESSAGE);
