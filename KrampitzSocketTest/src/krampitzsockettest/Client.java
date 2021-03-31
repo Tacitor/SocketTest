@@ -64,7 +64,7 @@ public class Client extends JFrame {
                 }
             }
         } catch (Exception ex) {
-            System.out.println("Error loading Windows Look and feel");
+            System.out.println("[Client] " + "Error loading Windows Look and feel");
         }
 
         this.width = width;
@@ -148,7 +148,7 @@ public class Client extends JFrame {
 
                 justPressedSend = true;
 
-                System.out.println("Sending the message: " + messageToSend.getText());
+                System.out.println("[Client " + clientID + "] " + "Sending the message: " + messageToSend.getText());
 
                 updateButtons();
 
@@ -348,10 +348,10 @@ public class Client extends JFrame {
                 totalClientNum = dataIn.readInt();
                 //get the starting chat
                 chat = dataIn.readUTF();
-                System.out.println("Connected to a server as Client #" + clientID);
+                System.out.println("[Client " + clientID + "] " + "Connected to a server as Client #" + clientID);
                 messageRecived.setText(chat);
             } catch (IOException e) {
-                System.out.println("IOException from CSC contructor ");
+                System.out.println("[Client " + clientID + "] " + "IOException from CSC contructor ");
             }
         }
 
@@ -361,7 +361,7 @@ public class Client extends JFrame {
                 dataOut.writeUTF(mesg);
                 dataOut.flush();
             } catch (IOException e) {
-                System.out.println("IOException from CSC sendNewString()");
+                System.out.println("[Client " + clientID + "] " + "IOException from CSC sendNewString()");
             }
         }
 
@@ -373,7 +373,7 @@ public class Client extends JFrame {
                 dataOut.write(fileStream, 0, fileStream.length);
                 dataOut.flush();
             } catch (IOException e) {
-                System.out.println("IOException from CSC sendFileStream()");
+                System.out.println("[Client " + clientID + "] " + "IOException from CSC sendFileStream()");
             }
         }
 
@@ -392,15 +392,15 @@ public class Client extends JFrame {
                 int count = 0;
                 while (count < file.length) {
                     int bytesRead = dataIn.read(file, count, file.length - count);
-                    System.out.println("bytesRead: " + bytesRead);
+                    System.out.println("[Client " + clientID + "] " + "bytesRead: " + bytesRead);
                     if (bytesRead == -1) {
-                        System.out.println("didn't get a complete file");
+                        System.out.println("[Client " + clientID + "] " + "didn't get a complete file");
                     }
                     count += bytesRead;
                 }
 
             } catch (IOException ex) {
-                System.out.println("IOException from CSC reciveNewString()");
+                System.out.println("[Client " + clientID + "] " + "IOException from CSC reciveNewString()");
             }
 
             return new FileTypeRecieve(file, msg, fileName);
@@ -412,7 +412,7 @@ public class Client extends JFrame {
             try {
                 msg = dataIn.readUTF();
             } catch (IOException ex) {
-                System.out.println("IOException from CSC reciveNewString()");
+                System.out.println("[Client " + clientID + "] " + "IOException from CSC reciveNewString()");
             }
 
             return msg;
@@ -424,7 +424,7 @@ public class Client extends JFrame {
             try {
                 msg = dataIn.readInt();
             } catch (IOException ex) {
-                System.out.println("IOException from CSC reciveType()");
+                System.out.println("[Client " + clientID + "] " + "IOException from CSC reciveType()");
             }
 
             return msg;
@@ -436,7 +436,7 @@ public class Client extends JFrame {
             try {
                 bool = dataIn.readBoolean();
             } catch (IOException ex) {
-                System.out.println("IOException from CSC reciveBoolean()");
+                System.out.println("[Client " + clientID + "] " + "IOException from CSC reciveBoolean()");
             }
 
             return bool;
@@ -448,7 +448,7 @@ public class Client extends JFrame {
      */
     public static void main(String[] args) {
         // TODO code application logic here
-        System.out.println("Hello World: Client");
+        System.out.println("[Client] " + "Hello World: Client");
         Client client = new Client(700, 200);
         client.connectToServer();
         client.setUpGUI();

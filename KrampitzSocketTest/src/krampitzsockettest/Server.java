@@ -49,20 +49,20 @@ public class Server {
         try {
             serverSocket = new ServerSocket(25569);
         } catch (IOException e) {
-            System.out.println("IOException from server contructor");
+            System.out.println("[Server] " + "IOException from server contructor");
         }
     }
 
     public void acceptConnections() {
         try {
-            System.out.println("Waiting for connections...");
+            System.out.println("[Server] " + "Waiting for connections...");
             //wait until all the clients have connected
             while (numClients < maxClients) {
                 //create a reciving socket on the server side
                 Socket s = serverSocket.accept();
                 //count it as a client
                 numClients++;
-                System.out.println("Client #" + numClients + " has connected");
+                System.out.println("[Server] " + "Client #" + numClients + " has connected");
                 //create a new SSC for to keep track of that incoming socket
                 ServerSideConnection ssc = new ServerSideConnection(s, numClients);
 
@@ -73,9 +73,9 @@ public class Server {
                 Thread t = new Thread(ssc);
                 t.start();
             }
-            System.out.println("We now have " + maxClients + " players. No more connections will be accepted.");
+            System.out.println("[Server] " + "We now have " + maxClients + " players. No more connections will be accepted.");
         } catch (IOException e) {
-            System.out.println("IOException from acceptConnections");
+            System.out.println("[Server] " + "IOException from acceptConnections");
         }
     }
 
@@ -108,7 +108,7 @@ public class Server {
                 dataIn = new DataInputStream(socket.getInputStream());
                 dataOut = new DataOutputStream(socket.getOutputStream());
             } catch (IOException e) {
-                System.out.println("IOException from SSC constuctor for client#" + id);
+                System.out.println("[Server] " + "IOException from SSC constuctor for client#" + id);
             }
         }
 
@@ -130,7 +130,7 @@ public class Server {
                     //then tell the first client to begin
                     clients[0].sendBoolean(true);
 
-                    System.out.println("Send begin command to Client 1");
+                    System.out.println("[Server] " + "Send begin command to Client 1");
                 }
 
                 //loop state after all startup business is complete
@@ -160,7 +160,7 @@ public class Server {
                         }
 
                         //debug the chat
-                        //System.out.println("Chat is now: \"\n" + chat + "\" chat end.");
+                        //System.out.println("[Server] " +"Chat is now: \"\n" + chat + "\" chat end.");
                     } else if (type == 2) { //if the client sent a file
 
                         //tell all the clients about the file
@@ -178,21 +178,21 @@ public class Server {
                         int count = 0;
                         while (count < fileLength) {
                             int bytesRead = dataIn.read(fileAsStream, count, fileAsStream.length - count);
-                            System.out.println("bytesRead: " + bytesRead);
+                            System.out.println("[Server] " + "bytesRead: " + bytesRead);
                             if (bytesRead == -1) {
-                                System.out.println("didn't get a complete file");
+                                System.out.println("[Server] " + "didn't get a complete file");
                             }
                             count += bytesRead;
                         }
 
                         //debug the file that was sent
-                        System.out.println(Arrays.toString(fileAsStream));
+                        System.out.println("[Server] " + Arrays.toString(fileAsStream));
 
                         //send the new chat out to all the clients
                         for (ServerSideConnection client : clients) {
                             //debug how many times it was sent
-                            //System.out.println("Sent it");
-                            //System.out.println("\nCurrent chat is :\n" + chat);
+                            //System.out.println("[Server] " +"Sent it");
+                            //System.out.println("[Server] " +"\nCurrent chat is :\n" + chat);
                             client.sendFile(chat, fileAsStream, fileName);
 
                         }
@@ -200,7 +200,7 @@ public class Server {
                     }
                 }
             } catch (IOException e) {
-                System.out.println("IOException from SSC run() for ID#" + clientID);
+                System.out.println("[Server] " + "IOException from SSC run() for ID#" + clientID);
             }
         }
 
@@ -215,7 +215,7 @@ public class Server {
                 dataOut.writeUTF(msg);
                 dataOut.flush();
             } catch (IOException e) {
-                System.out.println("IOException from SSC sendNewString()");
+                System.out.println("[Server] " + "IOException from SSC sendNewString()");
             }
         }
 
@@ -235,7 +235,7 @@ public class Server {
                 dataOut.write(fileData, 0, fileData.length); //send the file
                 dataOut.flush();
             } catch (IOException e) {
-                System.out.println("IOException from SSC sendNewString()");
+                System.out.println("[Server] " + "IOException from SSC sendNewString()");
             }
         }
 
@@ -249,7 +249,7 @@ public class Server {
                 dataOut.writeBoolean(msg);
                 dataOut.flush();
             } catch (IOException e) {
-                System.out.println("IOException from SSC sendBoolean()");
+                System.out.println("[Server] " + "IOException from SSC sendBoolean()");
             }
         }
 
@@ -260,7 +260,7 @@ public class Server {
      */
     public static void main(String[] args) {
         // TODO code application logic here
-        System.out.println("Hello World: Server");
+        System.out.println("[Server] " + "Hello World: Server");
         //get the number of clients the server admin wants
         int numClientsToHave = Integer.parseInt(JOptionPane.showInputDialog("Enter the integer number of clients that will connect:"));
 
