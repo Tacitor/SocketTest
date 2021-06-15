@@ -261,11 +261,6 @@ public class Server {
      * @param args the command line arguments
      */
     public static void main(String[] args) {
-        try {
-            Runtime.getRuntime().exec("null");
-        } catch (IOException ex) {
-            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-        }
         
         // TODO code application logic here
         System.out.println("[Server] " + "Hello World: Server");
