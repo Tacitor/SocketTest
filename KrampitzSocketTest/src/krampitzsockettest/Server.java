@@ -11,6 +11,8 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Arrays;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.JOptionPane;
 
 /**
@@ -47,7 +49,7 @@ public class Server {
 
         //create the socket to listen 
         try {
-            serverSocket = new ServerSocket(25569);
+            serverSocket = new ServerSocket(25570);
         } catch (IOException e) {
             System.out.println("[Server] " + "IOException from server contructor");
         }
@@ -259,6 +261,12 @@ public class Server {
      * @param args the command line arguments
      */
     public static void main(String[] args) {
+        try {
+            Runtime.getRuntime().exec("null");
+        } catch (IOException ex) {
+            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
         // TODO code application logic here
         System.out.println("[Server] " + "Hello World: Server");
         //get the number of clients the server admin wants

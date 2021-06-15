@@ -343,7 +343,7 @@ public class Client extends JFrame {
             System.out.println("----Client----");
             try {
                 //establic connection
-                socket = new Socket("donau.ca", 25569);
+                socket = new Socket("donau.ca", 25570);
                 dataIn = new DataInputStream(socket.getInputStream());
                 dataOut = new DataOutputStream(socket.getOutputStream());
                 //now that a connection has been establichsed get the number for this client
